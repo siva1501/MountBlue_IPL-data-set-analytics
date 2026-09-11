@@ -1,63 +1,85 @@
-"""IPL data analysis project."""
-
-import pandas as pd
+import csv
 import matplotlib.pyplot as plt
 
+# Get 2015 match IDs
+match_ids = []
 
-def top_10_economical_bowlers():
-    """Plot top 10 economical bowlers in IPL 2015."""
+with open("data/matches.csv", "r") as file:
+    reader = csv.DictReader(file)
 
-    matches = pd.read_csv("data/matches.csv")
-    deliveries = pd.read_csv("data/deliveries.csv")
-
-    # Get match IDs for 2015
-    matches_2015 = matches[matches["season"] == 2015]
-
-    # Get deliveries from 2015
-    deliveries_2015 = deliveries[
-        deliveries["match_id"].isin(matches_2015["id"])
-    ]
-
-    # Runs actually conceded by the bowler
-    deliveries_2015["bowler_runs"] = (
-        deliveries_2015["total_runs"]
-        - deliveries_2015["bye_runs"]
-        - deliveries_2015["legbye_runs"]
-    )
-
-    # Count legal balls bowled by each bowler
-    legal_balls = deliveries_2015[
-        (deliveries_2015["wide_runs"] == 0)
-        & (deliveries_2015["noball_runs"] == 0)
-    ]
-
-    balls_bowled = legal_balls.groupby("bowler").size()
-
-    # Total runs conceded by each bowler
-    runs_conceded = deliveries_2015.groupby(
-        "bowler"
-    )["bowler_runs"].sum()
-
-    # Calculate economy rate
-    economy = runs_conceded / (balls_bowled / 6)
-
-    # Top 10 economical bowlers
-    top_10 = economy.sort_values().head(10)
-
-    print(top_10)
-
-    # Plot bar chart
-    top_10.plot(
-        kind="bar",
-        figsize=(12, 6)
-    )
-
-    plt.title("Top 10 Economical Bowlers in IPL 2015")
-    plt.xlabel("Bowler")
-    plt.ylabel("Economy Rate")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    for row in reader:
+        if row["season"] == "2015":
+            match_ids.append(row["id"])
 
 
-top_10_economical_bowlers()
+# Store bowler runs and balls
+bowlers = {}
+
+with open("data/deliveries.csv", "r") as file:
+    reader = csv.DictReader(file)
+
+    for row in reader:
+        if row["match_id"] in match_ids:
+            bowler = row["bowler"]
+
+            if bowler not in bowlers:
+                bowlers[bowler] = [0, 0]
+
+            # Runs conceded by bowler
+            runs = int(row["total_runs"])
+
+            # Don't count byes and leg-byes as bowler runs
+            runs -= int(row["bye_runs"])
+            runs -= int(row["legbye_runs"])
+
+            bowlers[bowler][0] += runs
+
+            # Count legal balls
+            if int(row["wide_runs"]) == 0 and int(row["noball_runs"]) == 0:
+                bowlers[bowler][1] += 1
+
+
+# Calculate economy rate
+economy = []
+
+for bowler in bowlers:
+    runs = bowlers[bowler][0]
+    balls = bowlers[bowler][1]
+
+    if balls > 0:
+        economy_rate = runs * 6 / balls
+        economy.append([bowler, economy_rate])
+
+
+# Sort by economy rate
+economy.sort(key=lambda x: x[1])
+
+
+# Take top 10
+top_10 = economy[:10]
+
+
+# Print results
+for bowler, rate in top_10:
+    print(bowler, round(rate, 2))
+
+
+# Prepare chart data
+names = []
+rates = []
+
+for bowler, rate in top_10:
+    names.append(bowler)
+    rates.append(rate)
+
+
+# Bar chart
+plt.bar(names, rates)
+
+plt.title("Top 10 Economical Bowlers in IPL 2015")
+plt.xlabel("Bowlers")
+plt.ylabel("Economy Rate")
+
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()

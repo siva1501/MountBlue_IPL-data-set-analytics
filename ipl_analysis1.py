@@ -1,19 +1,36 @@
 """IPL data analysis project."""
-
-import pandas as pd
+import csv
 import matplotlib.pyplot as plt
 
 
 def total_runs_by_team():
     """Calculate and plot total runs scored by each IPL team."""
-    deliveries = pd.read_csv("data/deliveries.csv")
 
-    team_runs = deliveries.groupby("batting_team")["total_runs"].sum()
-    team_runs = team_runs.sort_values(ascending=False)
+    team_runs = {}
+    with open("data/deliveries.csv", "r", newline="") as file:
+        deliveries = csv.DictReader(file)
+
+        for delivery in deliveries:
+            team = delivery["batting_team"]
+            runs = int(delivery["total_runs"])
+
+            if team not in team_runs:
+                team_runs[team] = 0
+
+            team_runs[team] += runs
+
+    team_runs = dict(
+        sorted(
+            team_runs.items(),
+            key=lambda item: item[1],
+            reverse=True
+        )
+    )
 
     print(team_runs)
 
-    team_runs.plot(kind="bar", figsize=(12, 6))
+    plt.figure(figsize=(12, 6))
+    plt.bar(team_runs.keys(), team_runs.values())
 
     plt.title("Total Runs Scored by Each IPL Team")
     plt.xlabel("Team")

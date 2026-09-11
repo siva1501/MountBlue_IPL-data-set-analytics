@@ -1,5 +1,3 @@
-"""IPL data analysis project."""
-
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -9,15 +7,13 @@ def matches_won_by_team_per_year():
 
     matches = pd.read_csv("data/matches.csv")
 
-    # Count matches won by each team in each season
+    # Count wins for each team in each season
     matches_won = matches.groupby(
         ["season", "winner"]
     ).size()
 
-    # Convert into season x team format
+    # Convert to season x team format
     matches_won = matches_won.unstack(fill_value=0)
-
-    print(matches_won)
 
     # Plot stacked bar chart
     matches_won.plot(
@@ -27,9 +23,9 @@ def matches_won_by_team_per_year():
     )
 
     plt.title("Number of Matches Won by Each Team per Year")
-    plt.xlabel("Year")
+    plt.xlabel("Season")
     plt.ylabel("Number of Matches Won")
-    plt.xticks(rotation=45)
+    plt.legend(title="Team", bbox_to_anchor=(1.05, 1))
     plt.tight_layout()
     plt.show()
 
