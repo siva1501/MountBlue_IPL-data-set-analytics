@@ -1,23 +1,23 @@
 """IPL foreign umpire analysis."""
 
-import pandas as pd
+import csv
 import matplotlib.pyplot as plt
 
 
 def foreign_umpire_analysis():
     """Plot number of foreign IPL umpires by country."""
 
-    matches = pd.read_csv("data/matches.csv")
+    umpires = set()
 
-    # Get umpire names
-    umpires = pd.concat([
-        matches["umpire1"],
-        matches["umpire2"],
-        matches["umpire3"]
-    ])
+    with open("data/matches.csv", "r", newline="") as file:
+        matches = csv.DictReader(file)
 
-    # Remove empty values and duplicate names
-    umpires = umpires.dropna().drop_duplicates()
+        for match in matches:
+            for column in ["umpire1", "umpire2", "umpire3"]:
+                umpire = match[column]
+
+                if umpire:
+                    umpires.add(umpire)
 
     umpire_country = {
         "CB Gaffaney": "New Zealand",
@@ -47,22 +47,31 @@ def foreign_umpire_analysis():
         "RJ Tucker": "Australia"
     }
 
-    # Convert umpire names to countries
-    countries = []
+    country_count = {}
 
     for umpire in umpires:
         country = umpire_country.get(umpire)
 
         if country and country != "India":
-            countries.append(country)
+            if country not in country_count:
+                country_count[country] = 0
 
-    # Count umpires by country
-    country_count = pd.Series(countries).value_counts()
+            country_count[country] += 1
+
+    # Sort countries by number of umpires
+    country_count = dict(
+        sorted(
+            country_count.items(),
+            key=lambda item: item[1],
+            reverse=True
+        )
+    )
 
     print(country_count)
 
     # Plot
-    country_count.plot(kind="bar", figsize=(10, 6))
+    plt.figure(figsize=(10, 6))
+    plt.bar(country_count.keys(), country_count.values())
 
     plt.title("Number of Foreign IPL Umpires by Country")
     plt.xlabel("Country")

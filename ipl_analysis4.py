@@ -1,35 +1,65 @@
 """IPL data analysis project."""
 
-import pandas as pd
+import csv
 import matplotlib.pyplot as plt
 
 
 def matches_played_by_team_by_season():
     """Plot stacked chart of matches played by team by season."""
 
-    matches = pd.read_csv("data/matches.csv")
+    matches_played = {}
 
-    # Get team1 matches
-    team1 = matches[["season", "team1"]].rename(columns={"team1": "team"})
+    with open("data/matches.csv", "r", newline="") as file:
+        matches = csv.DictReader(file)
 
-    # Get team2 matches
-    team2 = matches[["season", "team2"]].rename(columns={"team2": "team"})
+        for match in matches:
+            season = match["season"]
+            team1 = match["team1"]
+            team2 = match["team2"]
 
-    # Combine both teams
-    team_matches = pd.concat([team1, team2])
+            if season not in matches_played:
+                matches_played[season] = {}
 
-    # Count matches played by each team in each season
-    matches_played = team_matches.groupby(["season", "team"]).size()
-    # Convert to table format
-    matches_played = matches_played.unstack(fill_value=0)
+            if team1 not in matches_played[season]:
+                matches_played[season][team1] = 0
+
+            if team2 not in matches_played[season]:
+                matches_played[season][team2] = 0
+
+            matches_played[season][team1] += 1
+            matches_played[season][team2] += 1
+
     print(matches_played)
+
+    # Get all teams
+    teams = set()
+
+    for season in matches_played:
+        teams.update(matches_played[season].keys())
+
+    teams = sorted(teams)
+    seasons = sorted(matches_played.keys())
+
     # Plot stacked bar chart
-    matches_played.plot(kind="bar", stacked=True, figsize=(14, 7))
+    bottom = [0] * len(seasons)
+
+    for team in teams:
+        values = []
+
+        for season in seasons:
+            values.append(matches_played[season].get(team, 0))
+
+        plt.bar(seasons, values, bottom=bottom, label=team)
+
+        bottom = [bottom[i] + values[i] for i in range(len(seasons))]
 
     plt.title("Matches Played by Team by Season")
     plt.xlabel("Season")
     plt.ylabel("Number of Matches")
     plt.xticks(rotation=45)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
     plt.show()
+
+
 matches_played_by_team_by_season()
