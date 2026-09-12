@@ -1,53 +1,45 @@
-"""Total runs scored by each team."""
-
 import csv
-import matplotlib.pyplot as plt
 
 
-def total_runs_by_team():
-    """Calculate total runs scored by each team."""
+# CHANGE: renamed parameter from generic "s" to "value" and narrowed except to ValueError for clarity.
+def to_int(value: str, default: int = 0) -> int:
+    """
+    Safely convert a string to integer.
 
-    team_runs = {}
+    Args:
+        value (str): Input string to convert.
+        default (int): Value to return if conversion fails.
 
-    with open("data/deliveries.csv", "r", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-
-        for row in reader:
-            team = row["batting_team"]
-            runs = int(row["total_runs"])
-
-            if team not in team_runs:
-                team_runs[team] = 0
-
-            team_runs[team] += runs
-
-    # Sort teams by total runs
-    sorted_teams = sorted(
-        team_runs.items(),
-        key=lambda item: item[1],
-        reverse=True
-    )
-
-    teams = []
-    runs = []
-
-    for team, total in sorted_teams:
-        teams.append(team)
-        runs.append(total)
-        print(team, total)
-
-    # Bar chart
-    plt.figure(figsize=(12, 6))
-    plt.bar(teams, runs)
-
-    plt.xlabel("Teams")
-    plt.ylabel("Total Runs")
-    plt.title("Total Runs Scored by Each Team in IPL")
-
-    plt.xticks(rotation=45, ha="right")
-    plt.tight_layout()
-    plt.show()
+    Returns:
+        int: Converted integer or default if conversion fails.
+    """
+    try:
+        return int((value or "").strip())
+    except ValueError:
+        return default
 
 
-if __name__ == "__main__":
-    total_runs_by_team()
+def calculate_total_runs_by_team(filepath: str) -> dict[str, int]:
+    """
+    Calculate total runs scored by each team.
+
+    Args:
+        filepath (str): Path to the CSV file containing deliveries data.
+
+    Returns:
+        dict[str, int]: Mapping team name -> total runs.
+    """
+    team_runs: dict[str, int] = {}
+
+    with open(filepath, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for delivery in reader:
+            batting_team = (delivery.get("batting_team") or "").strip()
+            if not batting_team:
+                continue
+
+            runs = to_int(delivery.get("total_runs"), default=0)
+
+            team_runs[batting_team] = team_runs.get(batting_team, 0) + runs
+
+    return team_runs
