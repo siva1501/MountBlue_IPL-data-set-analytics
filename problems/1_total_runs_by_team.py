@@ -1,53 +1,53 @@
-"""Total runs scored by each team."""
+"""Calculate total runs scored by each team."""
 
 import csv
-import matplotlib.pyplot as plt
+
+from plot import data_plotting
 
 
-def total_runs_by_team():
+def to_int(value: str, default: int = 0) -> int:
+    """Convert a value to integer safely."""
+    try:
+        return int((value or "").strip())
+    except ValueError:
+        return default
+
+
+def calculate_total_runs_by_team(filepath: str) -> dict[str, int]:
     """Calculate total runs scored by each team."""
 
     team_runs = {}
 
-    with open("data/deliveries.csv", "r", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
+    # Read deliveries and calculate runs for each team.
+    with open(filepath, encoding="utf-8", newline="") as file:
+        for row in csv.DictReader(file):
+            team = (row.get("batting_team") or "").strip()
 
-        for row in reader:
-            team = row["batting_team"]
-            runs = int(row["total_runs"])
+            if not team:
+                continue
 
-            if team not in team_runs:
-                team_runs[team] = 0
+            runs = to_int(row.get("total_runs"))
+            team_runs[team] = team_runs.get(team, 0) + runs
 
-            team_runs[team] += runs
-
-    # Sort teams by total runs
-    sorted_teams = sorted(
-        team_runs.items(),
-        key=lambda item: item[1],
-        reverse=True
-    )
-
-    teams = []
-    runs = []
-
-    for team, total in sorted_teams:
-        teams.append(team)
-        runs.append(total)
-        print(team, total)
-
-    # Bar chart
-    plt.figure(figsize=(12, 6))
-    plt.bar(teams, runs)
-
-    plt.xlabel("Teams")
-    plt.ylabel("Total Runs")
-    plt.title("Total Runs Scored by Each Team in IPL")
-
-    plt.xticks(rotation=45, ha="right")
-    plt.tight_layout()
-    plt.show()
+    return team_runs
 
 
-if __name__ == "__main__":
-    total_runs_by_team()
+result = calculate_total_runs_by_team("../data/deliveries.csv")
+
+# Sort teams by total runs.
+sorted_teams = sorted(result.items(), key=lambda item: item[1], reverse=True)
+
+# Print the result.
+for team, runs in sorted_teams:
+    print(team, runs)
+
+teams, runs = zip(*sorted_teams)
+
+# Plot the result using the common plotting module.
+data_plotting(
+    "Total Runs Scored by Each Team in IPL",
+    teams,
+    runs,
+    "Teams",
+    "Total Runs",
+)

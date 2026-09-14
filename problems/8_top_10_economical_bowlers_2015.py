@@ -1,97 +1,76 @@
 """Top 10 economical bowlers in IPL 2015."""
 
 import csv
-import matplotlib.pyplot as plt
+
+from plot import data_plotting
 
 
-def top_10_economical_bowlers():
-    """Plot the top 10 economical bowlers in 2015."""
+def top_10_economical_bowlers(matches_file, deliveries_file):
+    """Calculate the top 10 economical bowlers in 2015."""
 
-    # Find all match IDs from 2015
     matches_2015 = set()
 
-    with open("data/matches.csv", "r", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-
-        for row in reader:
+    # Get match IDs from 2015.
+    with open(matches_file, encoding="utf-8", newline="") as file:
+        for row in csv.DictReader(file):
             if row["season"] == "2015":
                 matches_2015.add(row["id"])
 
-    # Store runs and balls for each bowler
-    bowler_runs = {}
-    bowler_balls = {}
+    bowlers = {}
 
-    with open("data/deliveries.csv", "r", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-
-        for row in reader:
+    # Calculate runs and balls for each bowler.
+    with open(deliveries_file, encoding="utf-8", newline="") as file:
+        for row in csv.DictReader(file):
             if row["match_id"] not in matches_2015:
                 continue
 
             bowler = row["bowler"]
+            runs = (
+                int(row["total_runs"])
+                - int(row["bye_runs"])
+                - int(row["legbye_runs"])
+            )
 
-            # Runs conceded by the bowler
-            total_runs = int(row["total_runs"])
+            if bowler not in bowlers:
+                bowlers[bowler] = [0, 0]
 
-            # Do not count byes and leg-byes as bowler runs
-            bye_runs = int(row["bye_runs"])
-            legbye_runs = int(row["legbye_runs"])
+            bowlers[bowler][0] += runs
+            bowlers[bowler][1] += 1
 
-            runs_conceded = total_runs - bye_runs - legbye_runs
+    # Calculate economy rate.
+    economy_rates = {
+        bowler: runs / (balls / 6)
+        for bowler, (runs, balls) in bowlers.items()
+        if balls > 0
+    }
 
-            if bowler not in bowler_runs:
-                bowler_runs[bowler] = 0
-                bowler_balls[bowler] = 0
-
-            bowler_runs[bowler] += runs_conceded
-
-            # One delivery = one ball
-            bowler_balls[bowler] += 1
-
-    # Calculate economy rate
-    economy_rates = {}
-
-    for bowler in bowler_runs:
-        runs = bowler_runs[bowler]
-        balls = bowler_balls[bowler]
-
-        if balls > 0:
-            overs = balls / 6
-            economy = runs / overs
-            economy_rates[bowler] = economy
-
-    # Sort by economy rate
-    sorted_bowlers = sorted(
+    # Select the top 10 economical bowlers.
+    top_10 = sorted(
         economy_rates.items(),
         key=lambda item: item[1]
-    )
+    )[:10]
 
-    # Top 10 economical bowlers
-    top_10 = sorted_bowlers[:10]
-
-    bowlers = []
-    economy = []
-
-    for bowler, rate in top_10:
-        bowlers.append(bowler)
-        economy.append(rate)
-
-        print(bowler, round(rate, 2))
-
-    # Plot bar chart
-    plt.figure(figsize=(12, 6))
-
-    plt.bar(bowlers, economy)
-
-    plt.xlabel("Bowler")
-    plt.ylabel("Economy Rate")
-    plt.title("Top 10 Economical Bowlers in IPL 2015")
-
-    plt.xticks(rotation=45, ha="right")
-
-    plt.tight_layout()
-    plt.show()
+    return top_10
 
 
-if __name__ == "__main__":
-    top_10_economical_bowlers()
+result = top_10_economical_bowlers(
+    "../data/matches.csv",
+    "../data/deliveries.csv",
+)
+
+# Print result.
+for bowler, rate in result:
+    print(bowler, round(rate, 2))
+
+# Prepare data for plotting.
+bowlers = [bowler for bowler, _ in result]
+economy = [rate for _, rate in result]
+
+# Plot result.
+data_plotting(
+    "Top 10 Economical Bowlers in IPL 2015",
+    bowlers,
+    economy,
+    "Bowler",
+    "Economy Rate",
+)

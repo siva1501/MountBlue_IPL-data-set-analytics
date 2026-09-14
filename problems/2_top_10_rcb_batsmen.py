@@ -1,50 +1,57 @@
+"""Find the top 10 batsmen for Royal Challengers Bangalore."""
+
 import csv
-import matplotlib.pyplot as plt
+
+from plot import data_plotting
 
 
-batsman_runs = {}
+RCB = "Royal Challengers Bangalore"
 
-with open("data/deliveries.csv", "r", encoding="utf-8") as file:
-    reader = csv.DictReader(file)
 
-    for row in reader:
-        if row["batting_team"] == "Royal Challengers Bangalore":
+def top_rcb_batsman_by_runs(filepath: str, top_n: int = 10) -> list:
+    """Calculate the top RCB batsmen based on total runs."""
+
+    runs_by_batsman = {}
+
+    # Read deliveries and calculate runs for each RCB batsman.
+    with open(filepath, encoding="utf-8", newline="") as file:
+        for row in csv.DictReader(file):
+
+            if row["batting_team"] != RCB:
+                continue
+
             batsman = row["batsman"]
             runs = int(row["batsman_runs"])
 
-            if batsman not in batsman_runs:
-                batsman_runs[batsman] = 0
+            runs_by_batsman[batsman] = (
+                runs_by_batsman.get(batsman, 0) + runs
+            )
 
-            batsman_runs[batsman] += runs
+    # Sort batsmen by runs and select the top 10.
+    top_batsmen = sorted(
+        runs_by_batsman.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )[:top_n]
+
+    return top_batsmen
 
 
-sorted_batsmen = sorted(
-    batsman_runs.items(),
-    key=lambda item: item[1],
-    reverse=True
-)
+result = top_rcb_batsman_by_runs("../data/deliveries.csv")
 
-top_10 = sorted_batsmen[:10]
-
-batsmen = []
-runs = []
-
-for batsman, total_runs in top_10:
-    batsmen.append(batsman)
-    runs.append(total_runs)
+# Print the top 10 batsmen.
+for batsman, total_runs in result:
     print(batsman, total_runs)
 
+# Prepare data for the common plotting function.
+batsmen = [batsman for batsman, _ in result]
+runs = [total_runs for _, total_runs in result]
 
-# Create plot
-plt.figure(figsize=(12, 6))
-
-plt.bar(batsmen, runs)
-
-plt.xlabel("Batsmen")
-plt.ylabel("Total Runs")
-plt.title("Top 10 Batsmen for Royal Challengers Bangalore")
-
-plt.xticks(rotation=45)
-plt.tight_layout()
-
-plt.show()
+# Plot the result.
+data_plotting(
+    "Top 10 Batsmen for Royal Challengers Bangalore",
+    batsmen,
+    runs,
+    "Batsmen",
+    "Total Runs",
+)

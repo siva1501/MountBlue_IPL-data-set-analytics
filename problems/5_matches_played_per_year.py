@@ -1,51 +1,38 @@
 """Number of matches played per year in IPL."""
 
 import csv
-import matplotlib.pyplot as plt
+
+from plot import data_plotting
 
 
-def matches_played_per_year():
-    """Plot number of IPL matches played in each year."""
+def matches_played_per_year(filepath):
+    """Calculate number of matches played in each year."""
 
-    matches_per_year = {}
+    matches = {}
 
-    with open("data/matches.csv", "r", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-
-        for row in reader:
+    with open(filepath, encoding="utf-8", newline="") as file:
+        for row in csv.DictReader(file):
             season = row["season"]
+            matches[season] = matches.get(season, 0) + 1
 
-            if season not in matches_per_year:
-                matches_per_year[season] = 0
-
-            matches_per_year[season] += 1
-
-    # Sort seasons
-    sorted_seasons = sorted(matches_per_year)
-
-    seasons = []
-    match_counts = []
-
-    for season in sorted_seasons:
-        seasons.append(season)
-        match_counts.append(matches_per_year[season])
-
-        print(season, matches_per_year[season])
-
-    # Plot bar chart
-    plt.figure(figsize=(12, 6))
-
-    plt.bar(seasons, match_counts)
-
-    plt.xlabel("Year")
-    plt.ylabel("Number of Matches")
-    plt.title("Number of Matches Played per Year in IPL")
-
-    plt.xticks(rotation=45)
-
-    plt.tight_layout()
-    plt.show()
+    return matches
 
 
-if __name__ == "__main__":
-    matches_played_per_year()
+result = matches_played_per_year("../data/matches.csv")
+
+# Sort seasons.
+seasons = sorted(result)
+counts = [result[season] for season in seasons]
+
+# Print result.
+for season in seasons:
+    print(season, result[season])
+
+# Plot result.
+data_plotting(
+    "Number of Matches Played per Year in IPL",
+    seasons,
+    counts,
+    "Year",
+    "Number of Matches",
+)
